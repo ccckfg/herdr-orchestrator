@@ -19,6 +19,30 @@ python <skill-dir>/scripts/orch.py doctor
 `HERDR_ENV≠1` 就停下，告诉用户本工具只能在 Herdr 窗格里跑。
 doctor 会列出本机真正起得来的 kind——**别照着文档猜，以它的输出为准**。
 
+### 先读用户的选型偏好
+
+doctor 的「模型偏好」那行会指出 `modelselect.md` 在哪。**找到就先完整读一遍**，
+它用自然语言写着什么活该派给谁、用哪个模型、什么强度，是你挑 kind 和模型的依据。
+
+```
+<项目>/.herdr-orch/modelselect.md     ← 项目级，优先
+~/.herdr-orch/modelselect.md          ← 用户级
+```
+
+**没有这份文档就提醒用户写一份**，并给出具体样子（别只说"请配置"）：
+
+```markdown
+- 复杂任务（架构、重构、难 bug）：droid 的 kimi-k3，强度 max
+- 简单任务（改字符串、跑测试）：droid 的 glm-5.3-flash
+- 要快的：agy 的 gemini-3.8-flash，effort high
+- 代码审查：一律 codex，别用写代码那个模型审自己
+```
+
+用户还没写之前照常干活：按角色库默认 kind 走，并在汇总里说明"用的是默认选型"。
+**不要自己编模型 ID**——编错了 agent 启动就报错，白等一轮。
+
+读懂之后用 `--role-args` 把参数落地，各家参数表和 droid 的坑见 `references/modelselect.md`。
+
 ## 什么时候用
 
 用：交叉审查（一个写、另一个独立审）、多视角并行分析、跨厂商对照、
@@ -53,8 +77,9 @@ manifest.json     状态与清理清单
 ```bash
 S=<skill-dir>/scripts/orch.py
 
-python $S doctor                                          # 1 自检
+python $S doctor                                          # 1 自检 + 读 modelselect.md
 python $S new --role reviewer:codex --role tester:droid \
+             --role-args reviewer="--model gpt-5.6-sol" \
              --task task.md --isolation single-writer \
              --autonomy ask                               # 2 建 run
 python $S card --role reviewer --file -                   # 3 逐个写任务卡（stdin）
@@ -88,6 +113,13 @@ python $S cleanup                                         # 8 收尾
 
 内置角色：`planner` `researcher` `reviewer` `tester`（只读）、`implementer` `docs`（可写）。
 角色名随便起也行，默认按只读处理。
+
+选哪个模型**以 `modelselect.md` 为准**，用 `--role-args 角色=参数` 落地：
+
+```bash
+--role-args reviewer="--model gpt-5.6-sol"       # claude/codex/agy/opencode 都有 --model
+--role-args impl='--settings "<绝对路径>.json"'   # droid 交互模式没有 --model，走设置文件
+```
 
 选 kind 的经验：让**写代码的和审代码的不是同一个 kind**，交叉审查才有意义；
 跑测试挑启动快的。一轮最多 4 个，多了就拆轮次。
@@ -166,4 +198,5 @@ python $S watch --timeout 600      # 继续等
 - `references/roles.md` — 角色库、kind 路由、任务卡模板
 - `references/isolation.md` — 两种隔离模式的取舍与 worktree 用法
 - `references/autonomy.md` — 三档自主程度、各 kind 的绕过参数、yolo 的代价
+- `references/modelselect.md` — 用户选型偏好怎么读、怎么落成参数、droid 的特殊处理
 - `references/troubleshooting.md` — 故障对照表

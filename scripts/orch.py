@@ -39,6 +39,9 @@ def build_parser():
                      choices=list(config.AUTONOMY_LEVELS),
                      help="ask=保留原生审批；auto=放行审批但留沙箱；yolo=全绕过")
     new.add_argument("--yolo", action="store_true", help="等价于 --autonomy yolo")
+    new.add_argument("--role-args", action="append", metavar="角色名=参数",
+                     help='按 modelselect.md 选好的模型等参数，'
+                          '如 reviewer="--model gpt-5.6 --effort high"，可重复')
     new.set_defaults(func=commands.new)
 
     card = sub.add_parser("card", help="写任务卡并自动附加交付协议")

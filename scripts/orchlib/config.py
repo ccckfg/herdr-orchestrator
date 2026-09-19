@@ -6,6 +6,10 @@
 # ---------------------------------------------------------------- 目录与文件名
 
 ORCH_DIR_NAME = ".herdr-orch"
+# 用户用自然语言写的模型/agent 选用偏好。项目级优先，其次用户级。
+# 脚本只负责找到它并原样交给编排器，不做任何解析——写法自由是重点。
+MODELSELECT_FILENAME = "modelselect.md"
+USER_ORCH_DIR = "~/.herdr-orch"
 MANIFEST_NAME = "manifest.json"
 TASK_FILE_NAME = "task.md"
 TASKS_DIR_NAME = "tasks"

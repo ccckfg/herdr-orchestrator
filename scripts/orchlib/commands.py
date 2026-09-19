@@ -10,7 +10,7 @@ import sys
 
 from . import cleanup as cleanup_mod
 from . import collect as collect_mod
-from . import config, dispatch, herdr, runstore, watch
+from . import config, dispatch, herdr, roles as rolelib, runstore, watch
 
 _ROW = "{:12} {:10} {}"
 
@@ -71,6 +71,7 @@ def doctor(args):
         "available_kinds": kinds,
         "git_repo": os.path.isdir(os.path.join(os.path.abspath(args.cwd), ".git")),
         "runs": runstore.list_runs(args.cwd),
+        "modelselect": runstore.find_modelselect(args.cwd),
     }
     problems = []
     if not found:
@@ -83,6 +84,13 @@ def doctor(args):
         problems.append("PATH 上找不到任何可用 agent CLI")
     if not checks["git_repo"]:
         problems.append("当前目录不是 git 仓库：--isolation worktree 不可用")
+    if not checks["modelselect"]:
+        problems.append(
+            "没有模型偏好文档 {}：派活前请用户用自然语言写一份，放在 {}".format(
+                config.MODELSELECT_FILENAME,
+                " 或 ".join(runstore.modelselect_candidates(args.cwd)),
+            )
+        )
     checks["problems"] = problems
 
     lines = [
@@ -91,6 +99,7 @@ def doctor(args):
         "窗格上下文    : {}".format(context),
         "可用 kind     : {}".format(", ".join(kinds) or "无"),
         "git 仓库      : {}".format("是" if checks["git_repo"] else "否"),
+        "模型偏好      : {}".format(checks["modelselect"] or "未找到"),
         "历史 run      : {}".format(len(checks["runs"])),
     ]
     if problems:
@@ -101,7 +110,8 @@ def doctor(args):
 
 def new(args):
     _require_herdr()
-    roles = [runstore.parse_role_spec(spec) for spec in args.role]
+    roles = [rolelib.parse_role_spec(spec) for spec in args.role]
+    rolelib.apply_role_args(roles, args.role_args)
     task = _read_source(args.task) if args.task else ""
     autonomy = config.AUTONOMY_YOLO if args.yolo else args.autonomy
     manifest = runstore.create_run(

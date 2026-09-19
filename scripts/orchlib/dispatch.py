@@ -7,7 +7,7 @@
 import os
 import time
 
-from . import config, herdr, layout, runstore
+from . import config, herdr, layout, roles as rolelib, runstore
 
 
 def _now():
@@ -45,7 +45,7 @@ def spawn(manifest, role_names=None, trust=False):
     for role in targets:
         name = role["name"]
         try:
-            kind = runstore.resolve_kind(role, available)
+            kind = rolelib.resolve_kind(role, available)
         except runstore.RunError as exc:
             role["state"] = config.STATE_FAILED
             role["error"] = str(exc)
@@ -66,7 +66,8 @@ def spawn(manifest, role_names=None, trust=False):
             continue
 
         autonomy = manifest.get("autonomy", config.DEFAULT_AUTONOMY)
-        extra = runstore.autonomy_args(kind, autonomy)
+        # 自主档参数在前，角色自己的（模型、推理强度等）在后
+        extra = rolelib.autonomy_args(kind, autonomy) + list(role.get("cli_args") or [])
         role["kind"] = kind
         role["pane_id"] = slot["pane_id"]
         role["tab_id"] = slot.get("tab_id")

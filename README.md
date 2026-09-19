@@ -60,6 +60,34 @@ python ~/.claude/skills/herdr-orchestrator/scripts/orch.py doctor
 它会告诉你：在不在 Herdr 里、本机**实际**能起哪些 agent、是不是 git 仓库。
 「可用 kind」这一行是扫 PATH 实测出来的，以它为准。
 
+## 告诉它你想用哪些模型
+
+写一份 `modelselect.md`，**用大白话写**就行，不需要任何格式：
+
+```markdown
+# 我的选型偏好
+
+- 复杂任务（架构、重构、难 bug）：droid 的 kimi-k3，强度 max
+- 简单任务（改字符串、加注释、跑测试）：droid 的 glm-5.3-flash
+- 要快的：agy 的 gemini-3.8-flash，effort high
+- 代码审查：一律用 codex，别用写代码那个模型审自己
+- 别用 opencode，我没配 provider
+```
+
+放在这两个位置之一（项目级优先，可以给不同项目配不同偏好）：
+
+```
+<你的项目>/.herdr-orch/modelselect.md
+~/.herdr-orch/modelselect.md
+```
+
+**脚本不解析这个文件**——是编排器自己读懂它，再翻译成给各个 CLI 的真实参数。
+所以你怎么写都行，包括写条件（"跑测试用最便宜的，反正只是看红绿"）。
+没写的话它会用默认选型，并在开工前提醒你写一份。
+
+> droid 有个特殊情况：它的**交互模式没有 `--model` 参数**（只有 `droid exec` 有）。
+> 编排器会自动生成一份临时设置文件用 `--settings` 传进去，效果一样，已实测可用。
+
 ## 最简单的用法：说人话
 
 装好之后，**你基本不需要记任何命令**。直接跟你的 agent 说：
@@ -193,6 +221,7 @@ herdr-orchestrator/
 │   ├── roles.md                # 角色库、怎么挑 CLI、任务卡模板
 │   ├── isolation.md            # 两种隔离模式的取舍
 │   ├── autonomy.md             # 三档自主程度、各家绕过参数、yolo 的代价
+│   ├── modelselect.md          # 选型偏好怎么读、怎么落成参数、droid 的特殊处理
 │   └── troubleshooting.md      # 故障对照表
 └── scripts/
     ├── orch.py                 # 命令行入口
