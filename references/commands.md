@@ -106,6 +106,12 @@ python "$S" dispatch --role reviewer --force
 `--force` 才会对已投递 / 超时 / 阻塞的角色重投。**重投前先 `peek`**：
 超时不等于没投递成功，盲目重投会让任务执行两遍。
 
+**二轮改派**（同一个 agent 接着干下一件活，保住上下文）也走这里：
+`card` 覆盖旧卡 → `dispatch --force --role <角色>`。角色状态已是 `done` 时
+`dispatch` 会说"没有可投递的角色"，需要先把 manifest 里的 `state` 改回 `spawned`；
+投新卡前记得把旧的 `out/<角色>.md` 改名归档，否则等待逻辑会拿它当本轮结果。
+完整姿势见 `multi-round.md`。
+
 ## watch
 
 并发等待所有角色落定。靠一次 `herdr api snapshot` 拿到全部 agent 状态，
@@ -184,3 +190,7 @@ python "$S" cleanup --remove-worktrees      # 危险：会删掉 worktree 里未
 
 清理顺序是窗格 → tab → workspace。关不掉的会保留并在输出里说明原因，
 不会为了关掉而升级手段。`--remove-worktrees` 必须用户明确要求才加。
+
+**这个项目后面还有活就用 `--keep-panes`**：窗格留着，下一轮直接改卡重投给同一个
+agent，它的上下文原封不动。关掉窗格并不销毁会话，但恢复要靠各家 CLI 的
+`--resume <会话id>`，麻烦且得提前记下 id（见 `multi-round.md`）。

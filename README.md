@@ -181,6 +181,25 @@ python $S answer --role reviewer 2     # 看清楚了再按，别盲按
 只表示"能接受输入"，不代表活干完了。屏幕内容只用来排查问题（`orch.py peek`），
 因为屏幕会截断、会被 TUI 重绘搅乱。
 
+## 第二轮活，投给同一个 agent
+
+一个模块做完第一轮，**别新起 agent**。它的会话里攒着读过的代码、踩过的坑、自己定下的
+取舍；重起一个等于全扔掉让它从零重读，既慢又贵，还容易和上一轮打架。
+
+```bash
+python scripts/orch.py card --role tui --file round2.md     # 覆盖旧卡
+python scripts/orch.py dispatch --force --role tui          # 投给还活着的那个
+python scripts/orch.py cleanup --keep-panes                 # 后面还有活就别关窗格
+```
+
+窗格已经关了也还有救——会话在磁盘上，用各家 CLI 的恢复参数接回来
+（droid：`--resume <会话id>`）。**所以开工时就把会话 id 记下来。**
+
+两个容易踩的坑：投新卡前要把旧的 `out/<角色>.md` 改名归档，否则等待逻辑会看见上一轮的
+文件立刻误报完成；判完成时要加一条"文件修改时间新于本轮任务卡"。
+
+细节见 `references/multi-round.md`。
+
 ## 内置角色
 
 | 角色 | 读写 | 默认挑谁 |
@@ -222,6 +241,7 @@ herdr-orchestrator/
 │   ├── isolation.md            # 两种隔离模式的取舍
 │   ├── autonomy.md             # 三档自主程度、各家绕过参数、yolo 的代价
 │   ├── modelselect.md          # 选型偏好怎么读、怎么落成参数、droid 的特殊处理
+│   ├── multi-round.md          # 多轮复用同一个 agent 的上下文：改卡重投、--resume、等待判据
 │   └── troubleshooting.md      # 故障对照表
 └── scripts/
     ├── orch.py                 # 命令行入口

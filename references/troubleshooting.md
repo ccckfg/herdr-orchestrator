@@ -39,6 +39,17 @@
 | `blocked` | 弹出了审批/提问界面 | `ask` 档读出来交给用户；`auto`/`yolo` 档 watch 已抓屏，读完 `answer` 再 `watch` |
 | `failed`：agent 已消失且没有结果文件 | 窗格被关，或 agent 进程崩了 | 看 `logs/<角色>.log`；需要的话重新 `spawn` 这个角色 |
 | 结果文件一直不出现 | 卡里没说清产出，或它在终端里长篇输出 | 改卡，强调结果必须写进文件，然后 `--force` 重投 |
+| 刚投完卡立刻判成 `done` | 看见的是**上一轮**留下的 `out/<角色>.md` | 投卡前归档旧结果卡；判据加"文件新于本轮任务卡"（`multi-round.md`） |
+| 角色已 `timeout`，再 `watch` 立刻返回 | `timeout` 是终态，`watch` 只轮询 `dispatched` | 把 manifest 里该角色的 `state` 改回 `dispatched` 再 `watch`；长任务建议自己轮询 |
+
+## 多轮改派
+
+| 现象 | 原因 | 处置 |
+| --- | --- | --- |
+| `dispatch` 说"没有可投递的角色" | 角色状态是 `done`，不在可投递集合里 | manifest 里 `state` 改回 `spawned` 再投（`multi-round.md`） |
+| 子 agent 空转一轮、什么都没做 | 它连不上自家 API（屏幕上有连接/证书错误） | **对同一会话重投**保住上下文，不要新起 agent；先确认网络本身是通的 |
+| 想接着用的 agent 窗格已经关了 | 会话还在磁盘上，只是没有窗格 | 用各家的恢复参数起回来（droid：`--resume <id>`，id 在 `~/.factory/sessions/*.jsonl`） |
+| 子 agent 推理强度自己变低了 | droid 在 Auto 模式下会自行降档 | 投卡前 `peek` 状态栏确认；要固定就提醒用户手动切回 |
 
 ## 结果不对劲
 

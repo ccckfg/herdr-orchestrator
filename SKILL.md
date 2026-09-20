@@ -95,6 +95,31 @@ python $S cleanup                                         # 8 收尾
 
 需要二轮时：改写任务卡 → `dispatch --force --role <角色>` → 再 `watch`。
 
+## 多轮复用上下文
+
+**同一个模块的第二轮活，永远投给第一轮那个 agent，不要新起。** 它的会话里攒着读过的代码、
+踩过的坑、自己定下的取舍；重起一个等于全扔掉让它从零重读，既慢又贵，还容易和上一轮打架。
+
+```bash
+python "$S" card --role tui --file round2.md      # 覆盖旧卡
+python "$S" dispatch --force --role tui           # 投给还活着的那个 agent
+python "$S" cleanup --keep-panes                  # 后面还有活就别关窗格
+```
+
+角色已是 `done` 时 `dispatch` 会说"没有可投递的角色"，把 manifest 里该角色的 `state`
+改回 `spawned` 再投。窗格已经关了的，用各家 CLI 的恢复参数接回来
+（droid：`--resume <会话id>`，id 在 `~/.factory/sessions/*.jsonl`，按 cwd 认）——
+**开工时就把会话 id 记下来**，别等关了再翻。
+
+两个必须注意的地方：
+
+- **投新卡前先把旧结果卡改名归档**。否则等待逻辑会看见上一轮的文件立刻误报完成——
+  大小稳定、内容也像真的，很难看出来。
+- **判完成要加"文件新于本轮任务卡"这一条**（`[ "$OUT" -nt "$CARD" ]`），
+  光看"存在且大小稳定"在多轮下不成立。
+
+细节、坑和恢复姿势见 `references/multi-round.md`。
+
 ## 写任务卡
 
 卡是子 agent 唯一的信息来源，**它看不到你的上下文**。每张卡必须：
@@ -187,6 +212,9 @@ python $S watch --timeout 600      # 继续等
 | `dispatch` 提示没观察到 working | 任务卡可能被启动画面吞了，`peek` 确认后 `--force` |
 | `watch` 超时且全程没 working | 同上，多半没投进去 |
 | 结果文件一直不出现 | 卡里没写清产出要求，或子 agent 在等人回答 |
+| 刚投卡就"完成"了 | 看见的是上一轮的旧结果卡，投卡前要归档；判据加"文件新于任务卡" |
+| 二轮 `dispatch` 说没有可投递的角色 | 角色已是 `done`，把 manifest 里的 `state` 改回 `spawned`（`multi-round.md`） |
+| 子 agent 空转一轮什么都没做 | 多半是它连不上自家 API（屏幕有连接错误）；**对同一会话重投**，不要新起 |
 | worktree 相关报错 | 不是 git 仓库，或需要用户确认仓库信任 |
 
 完整对照表和处置动作在 `references/troubleshooting.md`。
@@ -199,4 +227,5 @@ python $S watch --timeout 600      # 继续等
 - `references/isolation.md` — 两种隔离模式的取舍与 worktree 用法
 - `references/autonomy.md` — 三档自主程度、各 kind 的绕过参数、yolo 的代价
 - `references/modelselect.md` — 用户选型偏好怎么读、怎么落成参数、droid 的特殊处理
+- `references/multi-round.md` — 多轮复用同一个 agent 的上下文：改卡重投、`--resume`、等待判据
 - `references/troubleshooting.md` — 故障对照表
